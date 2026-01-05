@@ -183,13 +183,6 @@ namespace SupportTool.Features.Alerts.Services
             };
         }
 
-        /// <summary>
-        /// Checks if an alert has an exact match for the carrier name (not a partial match)
-        /// Checks the NRQL query for the pattern: CarrierName = 'carrier'
-        /// </summary>
-        /// <param name="alert">The alert to check</param>
-        /// <param name="carrierName">The carrier name to match</param>
-        /// <returns>True if exact match found, false otherwise</returns>
         public static bool HasExactCarrierNameMatch(NrqlAlert alert, string carrierName)
         {
             if (string.IsNullOrEmpty(carrierName) || string.IsNullOrEmpty(alert?.NrqlQuery))
@@ -198,8 +191,6 @@ namespace SupportTool.Features.Alerts.Services
             // Escape single quotes in carrier name for matching
             string escapedCarrierName = carrierName.Replace("'", "\\'");
             
-            // Look for exact pattern: CarrierName = 'carrierName' followed by space, comma, or end
-            // This ensures "DPD" doesn't match "DPD France"
             string pattern = $"CarrierName = '{escapedCarrierName}'";
             int index = alert.NrqlQuery.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
             
