@@ -173,14 +173,42 @@ namespace SupportTool.Features.Alerts.Services
             return alertType switch
             {
                 AlertType.PrintDuration => alerts.Any(alert =>
-                    alert.NrqlQuery.IndexOf($"{carrier}", StringComparison.OrdinalIgnoreCase) >= 0 &&                // Find CarrierName
-                    alert.NrqlQuery.Contains($"average(duration)")),                                                // Find average aggregate function
+                    HasExactCarrierNameMatch(alert, carrier) &&
+                    alert.NrqlQuery.Contains("average(duration)", StringComparison.OrdinalIgnoreCase)),
                 AlertType.ErrorRate => alerts.Any(alert =>
-                    alert.NrqlQuery.IndexOf($"{carrier}", StringComparison.OrdinalIgnoreCase) >= 0 &&                // Find CarrierName
-                    alert.NrqlQuery.Contains("percentage") &&                                                       // Find percentage aggregate function
-                    alert.NrqlQuery.Contains("Error")),
+                    HasExactCarrierNameMatch(alert, carrier) &&
+                    alert.NrqlQuery.Contains("percentage", StringComparison.OrdinalIgnoreCase) &&
+                    alert.NrqlQuery.Contains("Error", StringComparison.OrdinalIgnoreCase)),
                 _ => false
             };
+        }
+
+        public static bool HasExactCarrierNameMatch(NrqlAlert alert, string carrierName)
+        {
+            if (string.IsNullOrEmpty(carrierName) || string.IsNullOrEmpty(alert?.NrqlQuery))
+                return false;
+
+            // Escape single quotes in carrier name for matching
+            string escapedCarrierName = carrierName.Replace("'", "\\'");
+            
+            string pattern = $"CarrierName = '{escapedCarrierName}'";
+            int index = alert.NrqlQuery.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+            
+            if (index >= 0)
+            {
+                int afterPattern = index + pattern.Length;
+                // Check if the character after the pattern is a space, comma, or end of string
+                if (afterPattern >= alert.NrqlQuery.Length || 
+                    alert.NrqlQuery[afterPattern] == ' ' || 
+                    alert.NrqlQuery[afterPattern] == ',' ||
+                    alert.NrqlQuery[afterPattern] == '\'' ||
+                    alert.NrqlQuery[afterPattern] == ')')
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
