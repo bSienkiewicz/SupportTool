@@ -173,14 +173,51 @@ namespace SupportTool.Features.Alerts.Services
             return alertType switch
             {
                 AlertType.PrintDuration => alerts.Any(alert =>
-                    alert.NrqlQuery.IndexOf($"{carrier}", StringComparison.OrdinalIgnoreCase) >= 0 &&                // Find CarrierName
-                    alert.NrqlQuery.Contains($"average(duration)")),                                                // Find average aggregate function
+                    HasExactCarrierNameMatch(alert, carrier) &&
+                    alert.NrqlQuery.Contains("average(duration)", StringComparison.OrdinalIgnoreCase)),
                 AlertType.ErrorRate => alerts.Any(alert =>
-                    alert.NrqlQuery.IndexOf($"{carrier}", StringComparison.OrdinalIgnoreCase) >= 0 &&                // Find CarrierName
-                    alert.NrqlQuery.Contains("percentage") &&                                                       // Find percentage aggregate function
-                    alert.NrqlQuery.Contains("Error")),
+                    HasExactCarrierNameMatch(alert, carrier) &&
+                    alert.NrqlQuery.Contains("percentage", StringComparison.OrdinalIgnoreCase) &&
+                    alert.NrqlQuery.Contains("Error", StringComparison.OrdinalIgnoreCase)),
                 _ => false
             };
+        }
+
+        /// <summary>
+        /// Checks if an alert has an exact match for the carrier name (not a partial match)
+        /// Checks the NRQL query for the pattern: CarrierName = 'carrier'
+        /// </summary>
+        /// <param name="alert">The alert to check</param>
+        /// <param name="carrierName">The carrier name to match</param>
+        /// <returns>True if exact match found, false otherwise</returns>
+        public static bool HasExactCarrierNameMatch(NrqlAlert alert, string carrierName)
+        {
+            if (string.IsNullOrEmpty(carrierName) || string.IsNullOrEmpty(alert?.NrqlQuery))
+                return false;
+
+            // Escape single quotes in carrier name for matching
+            string escapedCarrierName = carrierName.Replace("'", "\\'");
+            
+            // Look for exact pattern: CarrierName = 'carrierName' followed by space, comma, or end
+            // This ensures "DPD" doesn't match "DPD France"
+            string pattern = $"CarrierName = '{escapedCarrierName}'";
+            int index = alert.NrqlQuery.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+            
+            if (index >= 0)
+            {
+                int afterPattern = index + pattern.Length;
+                // Check if the character after the pattern is a space, comma, or end of string
+                if (afterPattern >= alert.NrqlQuery.Length || 
+                    alert.NrqlQuery[afterPattern] == ' ' || 
+                    alert.NrqlQuery[afterPattern] == ',' ||
+                    alert.NrqlQuery[afterPattern] == '\'' ||
+                    alert.NrqlQuery[afterPattern] == ')')
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
