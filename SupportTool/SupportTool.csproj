@@ -14,7 +14,7 @@
     <WindowsPackageType>MSIX</WindowsPackageType>
 	<SelfContained>true</SelfContained>
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <ApplicationDisplayVersion>1.1.1</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>1.2.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
   </PropertyGroup>
   <ItemGroup>
